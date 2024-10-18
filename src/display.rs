@@ -4,13 +4,17 @@ const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
 
 pub struct Display {
-    pub pixels: [[u8; HEIGHT]; WIDTH]
+    pub pixels: [[u8; HEIGHT]; WIDTH],
+    pub width: usize,
+    pub height: usize
 }
 
 impl Display {
     pub fn new () -> Display {
         Display {
-            pixels: [[0; HEIGHT]; WIDTH]
+            pixels: [[0; HEIGHT]; WIDTH],
+            width: WIDTH,
+            height: HEIGHT
         }
     }
     pub fn clear(&mut self) {
