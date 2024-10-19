@@ -23,6 +23,7 @@ async fn main() {
     loop {
         cpu.emulate_cycle();
         cpu.display_update();
+        cpu.update_timers();
         next_frame().await
     }
 }

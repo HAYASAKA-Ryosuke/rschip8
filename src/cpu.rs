@@ -36,6 +36,12 @@ impl Cpu {
         }
     }
 
+    pub fn update_timers(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+    }
+
     pub fn emulate_cycle(&mut self) {
         let opcode = (self.ram[self.pc as usize] as u16) << 8 | self.ram[self.pc as usize + 1] as u16;
         self.execute_opcode(opcode);
