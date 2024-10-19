@@ -1,6 +1,7 @@
 use crate::display::Display;
-use rand::Rng;
-
+use ::rand::thread_rng;
+use ::rand::Rng;
+use macroquad::prelude::*;
 
 pub struct Cpu {
     ram: [u8; 4096],
@@ -11,6 +12,7 @@ pub struct Cpu {
     sp: u8,
     display: Display,
     key: [u8; 16],
+    delay_timer: u8,
 }
 
 impl Cpu {
@@ -24,6 +26,7 @@ impl Cpu {
             sp: 0,
             display,
             key: [0; 16],
+            delay_timer: 0,
         }
     }
 
@@ -52,7 +55,8 @@ impl Cpu {
                 self.display.clear();
             },
             0xEE => {
-                self.pc = self.stack[self.sp as usize]
+                self.pc = self.stack[self.sp as usize];
+                self.sp -= 1;
             },
             _ => panic!("Unknown opcode: {:#X}", opcode)
         };
@@ -105,7 +109,8 @@ impl Cpu {
     fn execute_category_seven(&mut self, opcode: u16) {
         let x = ((opcode & 0x0F00) >> 8) as u8;
         let kk = (opcode & 0x00FF) as u8;
-        self.v_register[x as usize] = (self.v_register[x as usize] + kk) & 0xFF;
+
+        self.v_register[x as usize] = self.v_register[x as usize].wrapping_add(kk);
         self.next_pc();
     }
 
@@ -173,7 +178,9 @@ impl Cpu {
     fn execute_category_c(&mut self, opcode: u16) {
         let x = ((opcode & 0x0F00) >> 8) as u8;
         let kk = (opcode & 0x00FF) as u8;
-        self.v_register[x as usize] = kk & (rand::thread_rng().gen_range(0..=255) as u8);
+        let mut rng = thread_rng();
+        let num: u8 = rng.gen_range(0..=255);
+        self.v_register[x as usize] = kk & num;
         self.next_pc();
     }
 
@@ -203,8 +210,96 @@ impl Cpu {
     }
     
     fn execute_category_e(&mut self, opcode: u16) {
+        let x = (opcode & 0x0F00) >> 8;
+        let nn = opcode & 0x00FF;
+        match nn {
+            0x9E => {
+                if self.key[self.v_register[x as usize] as usize] == 1 {
+                    self.next_pc();
+                }
+            },
+            0xA1 => {
+                if self.key[self.v_register[x as usize] as usize] != 1 {
+                    self.next_pc();
+                }
+            },
+            _ => panic!("Unknown opcode: {:#X}", opcode)
+        }
+        self.next_pc();
     }
 
+    fn convert_key_to_key_index(&mut self, c: char) -> u8 {
+        match c {
+            '0' => 0,
+            '1' => 1,
+            '2' => 2,
+            '3' => 3,
+            '4' => 4,
+            '5' => 5,
+            '6' => 6,
+            '7' => 7,
+            '8' => 8,
+            '9' => 9,
+            'a' => 10,
+            'b' => 11,
+            'c' => 12,
+            'd' => 13,
+            'e' => 14,
+            'f' => 15,
+            _ => 0,
+        }
+    }
+
+    fn execute_category_f(&mut self, opcode: u16) {
+        let x = (opcode & 0x0F00) >> 8;
+        match opcode & 0x00FF {
+            0x07 => {
+                self.v_register[x as usize] = self.delay_timer;
+                self.next_pc();
+            },
+            0x0A => {
+                while let Some(c) = get_char_pressed() {
+                    let key_index = self.convert_key_to_key_index(c);
+                    self.v_register[x as usize] = self.key[key_index as usize];
+                    self.next_pc();
+                }
+            },
+            0x15 => {
+                self.delay_timer = self.v_register[x as usize];
+                self.next_pc();
+            },
+            0x18 => {
+                // TODO: audio
+            },
+            0x1E => {
+                self.i_register += self.v_register[x as usize] as u16;
+                self.next_pc();
+            },
+            0x29 => {
+                self.i_register = self.v_register[x as usize] as u16 * 5;
+                self.next_pc();
+            },
+            0x33 => {
+                self.ram[self.i_register as usize] = self.v_register[x as usize] / 100;
+                self.ram[self.i_register as usize + 1] = (self.v_register[x as usize] / 10) % 10;
+                self.ram[self.i_register as usize + 2] = self.v_register[x as usize] % 10;
+                self.next_pc();
+            },
+            0x55 => {
+                for (i, &data) in self.v_register.iter().take(x as usize + 1).enumerate() {
+                    self.ram[self.i_register as usize + i] = data;
+                }
+                self.i_register += x + 1;
+                self.next_pc();
+            },
+            0x65 => {
+                for (i, &data) in self.ram[self.i_register as usize..=(self.i_register + x) as usize].iter().enumerate() {
+                    self.v_register[i] = data;
+                }
+            },
+            _ => panic!("Unknown opcode: {:#X}", opcode)
+        }
+    }
 
     fn execute_opcode(&mut self, opcode: u16) {
         let category = (opcode & 0xF000) >> 12;
@@ -250,6 +345,12 @@ impl Cpu {
             },
             0xD => {
                 self.execute_category_d(opcode);
+            },
+            0xE => {
+                self.execute_category_e(opcode);
+            },
+            0xF => {
+                self.execute_category_f(opcode);
             },
             _ => panic!("Unknown opcode: {:#X}", opcode)
         }
