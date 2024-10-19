@@ -5,6 +5,8 @@ mod cpu;
 use cpu::Cpu;
 mod display;
 use display::Display;
+mod audio;
+use audio::Audio;
 
 
 fn read_rom(file_name: &str) -> Vec<u8> {
@@ -18,7 +20,8 @@ fn read_rom(file_name: &str) -> Vec<u8> {
 async fn main() {
     let rom = read_rom("./test_opcode.ch8");
     let display = Display::new();
-    let mut cpu = Cpu::new(display);
+    let audio = Audio::new("./beep.wav");
+    let mut cpu = Cpu::new(display, audio.await);
     cpu.load_rom(rom);
     loop {
         cpu.emulate_cycle();

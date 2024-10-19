@@ -1,4 +1,5 @@
 use crate::display::Display;
+use crate::audio::Audio;
 use ::rand::thread_rng;
 use ::rand::Rng;
 use macroquad::prelude::*;
@@ -13,10 +14,11 @@ pub struct Cpu {
     display: Display,
     key: [u8; 16],
     delay_timer: u8,
+    audio: Audio
 }
 
 impl Cpu {
-    pub fn new(display: Display) -> Cpu {
+    pub fn new(display: Display, audio: Audio) -> Cpu {
         Cpu {
             ram: [0; 4096],
             v_register: [0; 16],
@@ -27,6 +29,7 @@ impl Cpu {
             display,
             key: [0; 16],
             delay_timer: 0,
+            audio
         }
     }
 
@@ -275,7 +278,8 @@ impl Cpu {
                 self.next_pc();
             },
             0x18 => {
-                // TODO: audio
+                self.audio.play();
+                self.next_pc();
             },
             0x1E => {
                 self.i_register += self.v_register[x as usize] as u16;
