@@ -252,7 +252,7 @@ impl Cpu {
             'd' => 13,
             'e' => 14,
             'f' => 15,
-            _ => 0,
+            _ => panic!("Unsupported key: {}", c),
         }
     }
 
