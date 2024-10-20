@@ -273,7 +273,7 @@ impl Cpu {
             if is_key_down(KEY_MAPPINGS[i]) {
                 self.key[i as usize] = 1;
             }
-            if is_key_pressed(KEY_MAPPINGS[i]) {
+            if is_key_released(KEY_MAPPINGS[i]) {
                 self.key[i as usize] = 0;
             }
         }
