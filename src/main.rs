@@ -1,6 +1,7 @@
-use macroquad::prelude::*;
+use std::env;
 use std::fs::File;
 use std::io::Read;
+use macroquad::prelude::*;
 mod cpu;
 use cpu::Cpu;
 mod display;
@@ -18,7 +19,12 @@ fn read_rom(file_name: &str) -> Vec<u8> {
 
 #[macroquad::main("Chip8")]
 async fn main() {
-    let rom = read_rom("./7-beep.ch8");
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        println!("Usage: chip8 <rom>");
+        std::process::exit(1);
+    }
+    let rom = read_rom(&args[1]);
     let display = Display::new();
     let audio = Audio::new("./beep.wav");
     let mut cpu = Cpu::new(display, audio.await);
@@ -26,8 +32,8 @@ async fn main() {
     loop {
         cpu.key_input();
         cpu.emulate_cycle();
-        cpu.display_update();
         cpu.update_timers();
+        cpu.display_update();
         next_frame().await
     }
 }
