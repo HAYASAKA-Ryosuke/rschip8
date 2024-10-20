@@ -19,8 +19,30 @@ pub struct Cpu {
 
 impl Cpu {
     pub fn new(display: Display, audio: Audio) -> Cpu {
+        const FONT_SPRITES: [u8; 80] = [
+            0xF0, 0x90, 0x90, 0x90, 0xF0,  // 0
+            0x20, 0x60, 0x20, 0x20, 0x70,  // 1
+            0xF0, 0x10, 0xF0, 0x80, 0xF0,  // 2
+            0xF0, 0x10, 0xF0, 0x10, 0xF0,  // 3
+            0x90, 0x90, 0xF0, 0x10, 0x10,  // 4
+            0xF0, 0x80, 0xF0, 0x10, 0xF0,  // 5
+            0xF0, 0x80, 0xF0, 0x90, 0xF0,  // 6
+            0xF0, 0x10, 0x20, 0x40, 0x40,  // 7
+            0xF0, 0x90, 0xF0, 0x90, 0xF0,  // 8
+            0xF0, 0x90, 0xF0, 0x10, 0xF0,  // 9
+            0xF0, 0x90, 0xF0, 0x90, 0x90,  // A
+            0xE0, 0x90, 0xE0, 0x90, 0xE0,  // B
+            0xF0, 0x80, 0x80, 0x80, 0xF0,  // C
+            0xE0, 0x90, 0x90, 0x90, 0xE0,  // D
+            0xF0, 0x80, 0xF0, 0x80, 0xF0,  // E
+            0xF0, 0x80, 0xF0, 0x80, 0x80   // F
+        ];
+        let mut ram: [u8; 4096] = [0; 4096];
+        for (i, &sprite) in FONT_SPRITES.iter().enumerate() {
+            ram[i] = sprite;
+        }
         Cpu {
-            ram: [0; 4096],
+            ram,
             v_register: [0; 16],
             i_register: 0,
             pc: 0x200,
@@ -34,6 +56,10 @@ impl Cpu {
     }
 
     pub fn load_rom(&mut self, rom: Vec<u8>) {
+        let rom_start = 0x200;
+        for (i, &byte) in rom.iter().enumerate() {
+            self.ram[rom_start + i] = byte;
+        }
         for (i, &byte) in rom.iter().enumerate() {
             self.ram[0x200 + i] = byte;
         }
@@ -69,6 +95,7 @@ impl Cpu {
             },
             _ => panic!("Unknown opcode: {:#X}", opcode)
         };
+        self.next_pc();
     }
 
     fn execute_category_one(&mut self, opcode: u16) {
@@ -146,7 +173,7 @@ impl Cpu {
             },
             5 => {
                 self.v_register[0xF] = if self.v_register[x as usize] > self.v_register[y as usize] { 1 } else { 0 };
-                self.v_register[x as usize] = (self.v_register[x as usize] - self.v_register[y as usize]) as u8;
+                self.v_register[x as usize] = self.v_register[x as usize].wrapping_sub(self.v_register[y as usize] as u8);
             },
             6 => {
                 self.v_register[0xF] = self.v_register[x as usize] & 0x1;
@@ -154,7 +181,7 @@ impl Cpu {
             },
             7 => {
                 self.v_register[0xF] = if self.v_register[y as usize] > self.v_register[x as usize] { 1 } else { 0 };
-                self.v_register[x as usize] = (self.v_register[y as usize] - self.v_register[x as usize]) as u8;
+                self.v_register[x as usize] = self.v_register[y as usize].wrapping_sub(self.v_register[x as usize]);
             }
             0xE => {
                 self.v_register[0xF] = (self.v_register[x as usize] & 0x80) >> 7;
@@ -306,6 +333,7 @@ impl Cpu {
                 for (i, &data) in self.ram[self.i_register as usize..=(self.i_register + x) as usize].iter().enumerate() {
                     self.v_register[i] = data;
                 }
+                self.next_pc();
             },
             _ => panic!("Unknown opcode: {:#X}", opcode)
         }
