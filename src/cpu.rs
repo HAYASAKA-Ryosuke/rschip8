@@ -67,9 +67,6 @@ impl Cpu {
         for (i, &byte) in rom.iter().enumerate() {
             self.ram[rom_start + i] = byte;
         }
-        for (i, &byte) in rom.iter().enumerate() {
-            self.ram[0x200 + i] = byte;
-        }
     }
 
     pub fn update_timers(&mut self) {
