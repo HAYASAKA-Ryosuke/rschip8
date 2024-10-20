@@ -83,7 +83,18 @@ impl Cpu {
     pub fn display_update(&mut self) {
         self.display.update();
     }
-    
+
+    pub fn key_input(&mut self) {
+        for i in 0..16 {
+            if is_key_down(KEY_MAPPINGS[i]) {
+                self.key[i as usize] = 1;
+            }
+            if is_key_released(KEY_MAPPINGS[i]) {
+                self.key[i as usize] = 0;
+            }
+        }
+    }
+
     fn next_pc(&mut self) {
         self.pc += 2;
     }
@@ -266,17 +277,6 @@ impl Cpu {
             _ => panic!("Unknown opcode: {:#X}", opcode)
         };
         self.next_pc();
-    }
-
-    pub fn key_input(&mut self) {
-        for i in 0..16 {
-            if is_key_down(KEY_MAPPINGS[i]) {
-                self.key[i as usize] = 1;
-            }
-            if is_key_released(KEY_MAPPINGS[i]) {
-                self.key[i as usize] = 0;
-            }
-        }
     }
 
     fn execute_category_f(&mut self, opcode: u16) {
