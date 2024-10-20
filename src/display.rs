@@ -21,7 +21,6 @@ impl Display {
         self.pixels = [[0; HEIGHT]; WIDTH];
     }
     pub fn update(&mut self) {
-        self.pixels[0][10] = 1;
         for x in 0..WIDTH {
             for y in 0..HEIGHT {
                 let color = if self.pixels[x][y] == 0 { BLACK } else { WHITE };
