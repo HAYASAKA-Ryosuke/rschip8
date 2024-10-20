@@ -18,12 +18,13 @@ fn read_rom(file_name: &str) -> Vec<u8> {
 
 #[macroquad::main("Chip8")]
 async fn main() {
-    let rom = read_rom("./test_opcode.ch8");
+    let rom = read_rom("./7-beep.ch8");
     let display = Display::new();
     let audio = Audio::new("./beep.wav");
     let mut cpu = Cpu::new(display, audio.await);
     cpu.load_rom(rom);
     loop {
+        cpu.key_input();
         cpu.emulate_cycle();
         cpu.display_update();
         cpu.update_timers();

@@ -4,6 +4,13 @@ use ::rand::thread_rng;
 use ::rand::Rng;
 use macroquad::prelude::*;
 
+const KEY_MAPPINGS: [KeyCode; 16] = [
+    KeyCode::Key0, KeyCode::Key1, KeyCode::Key2, KeyCode::Key3,
+    KeyCode::Key4, KeyCode::Key5, KeyCode::Key6, KeyCode::Key7,
+    KeyCode::Key8, KeyCode::Key9, KeyCode::A,    KeyCode::B,
+    KeyCode::C,    KeyCode::D,    KeyCode::E,    KeyCode::F
+];
+
 pub struct Cpu {
     ram: [u8; 4096],
     v_register: [u8; 16],
@@ -14,7 +21,7 @@ pub struct Cpu {
     display: Display,
     key: [u8; 16],
     delay_timer: u8,
-    audio: Audio
+    audio: Audio,
 }
 
 impl Cpu {
@@ -260,29 +267,18 @@ impl Cpu {
                 }
             },
             _ => panic!("Unknown opcode: {:#X}", opcode)
-        }
+        };
         self.next_pc();
     }
 
-    fn convert_key_to_key_index(&mut self, c: char) -> u8 {
-        match c {
-            '0' => 0,
-            '1' => 1,
-            '2' => 2,
-            '3' => 3,
-            '4' => 4,
-            '5' => 5,
-            '6' => 6,
-            '7' => 7,
-            '8' => 8,
-            '9' => 9,
-            'a' => 10,
-            'b' => 11,
-            'c' => 12,
-            'd' => 13,
-            'e' => 14,
-            'f' => 15,
-            _ => panic!("Unsupported key: {}", c),
+    pub fn key_input(&mut self) {
+        for i in 0..16 {
+            if is_key_down(KEY_MAPPINGS[i]) {
+                self.key[i as usize] = 1;
+            }
+            if is_key_pressed(KEY_MAPPINGS[i]) {
+                self.key[i as usize] = 0;
+            }
         }
     }
 
@@ -294,9 +290,15 @@ impl Cpu {
                 self.next_pc();
             },
             0x0A => {
-                while let Some(c) = get_char_pressed() {
-                    let key_index = self.convert_key_to_key_index(c);
-                    self.v_register[x as usize] = self.key[key_index as usize];
+                let mut key_pressed = None;
+                for (index, &pressed) in self.key.iter().enumerate() {
+                    if pressed == 1 {
+                        key_pressed = Some(index);
+                        break;
+                    }
+                }
+                if let Some(index) = key_pressed {
+                    self.v_register[x as usize] = index as u8;
                     self.next_pc();
                 }
             },
